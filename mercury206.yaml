@@ -1,0 +1,183 @@
+substitutions:
+  name: mercury-206
+  friendly_name: "Меркурий 206"
+  device_description: "Счётчик Меркурий 206 RS485"
+  external_components_source: github://DmitryKadyshev/esphome-mercury206@main
+  serial_number: 37206899 # SN Счётчика
+  tx_pin: GPIO4
+  rx_pin: GPIO5
+  rx_timeout: 500ms
+  update_interval: 30s
+
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  comment: ${device_description}
+  min_version: 2025.2.0
+  project:
+    name: "DmitryKadyshev.esphome-mercury206"
+    version: 1.0.0
+  platformio_options:
+    build_flags: 
+      - "-Wno-unused-variable"
+
+
+external_components:
+  - source: ${external_components_source}
+    components: [mercury206]
+    refresh: 0s
+
+
+esp8266:
+  board: d1_mini
+
+logger:
+  level: INFO  
+  logs:
+    component: INFO
+    mercury206: INFO  
+    uart: INFO
+    sensor: INFO
+
+api:
+  encryption:
+    key: !secret key
+
+web_server:
+  port: 80
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  min_auth_mode: WPA2
+  ap:
+    ssid: "mercury-206-fallback"
+    password: !secret wifi_fallback_password
+
+captive_portal:
+
+# Шина UART для RS485
+uart:
+  id: uart_mercury  
+  tx_pin: ${tx_pin}
+  rx_pin: ${rx_pin}
+  baud_rate: 9600
+  stop_bits: 1
+  parity: NONE
+  debug:
+    direction: BOTH
+    dummy_receiver: false
+    after:
+      timeout: 50ms
+    sequence:
+      - lambda: UARTDebug::log_hex(direction, bytes, ' ');
+
+# Основной компонент счётчика
+mercury206:
+  id: mercury_meter
+  uart_id: uart_mercury
+  serial_number: ${serial_number}   
+  update_interval: ${update_interval}  
+  request_timeout: ${rx_timeout}   
+  retry_count: 2           
+
+  # Сенсоры
+  voltage:
+    id: mercury_voltage
+    name: "Напряжение"
+    device_class: voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 1
+    filters:
+      - timeout: 60s
+      - sliding_window_moving_average:
+          window_size: 5
+          send_every: 1
+
+  current:
+    id: mercury_current
+    name: "Ток"
+    device_class: current
+    unit_of_measurement: "A"
+    accuracy_decimals: 2
+    filters:
+      - timeout: 60s
+
+  power:
+    id: mercury_power
+    name: "Мощность"
+    device_class: power
+    unit_of_measurement: "kW"
+    accuracy_decimals: 3
+    filters:
+      - timeout: 60s
+      - sliding_window_moving_average:
+          window_size: 10
+          send_every: 2
+
+  frequency:
+    id: mercury_frequency
+    name: "Частота"
+    device_class: frequency
+    unit_of_measurement: "Hz"
+    accuracy_decimals: 2
+    filters:
+      - timeout: 60s
+
+  energy_tariff_1:
+    id: mercury_t1
+    name: "Энергия T1"
+    device_class: energy
+    state_class: total_increasing
+    unit_of_measurement: "kWh"
+    accuracy_decimals: 2
+
+  energy_tariff_2:
+    id: mercury_t2
+    name: "Энергия T2"
+    device_class: energy
+    state_class: total_increasing
+    unit_of_measurement: "kWh"
+    accuracy_decimals: 2
+
+  energy_tariff_3:
+    id: mercury_t3
+    name: "Энергия T3"
+    device_class: energy
+    state_class: total_increasing
+    unit_of_measurement: "kWh"
+    accuracy_decimals: 2
+
+  energy_total:
+    id: mercury_total
+    name: "Энергия суммарно"
+    device_class: energy
+    state_class: total_increasing
+    unit_of_measurement: "kWh"
+    accuracy_decimals: 2
+
+  current_tariff:
+    id: mercury_tariff_num
+    name: "Текущий тариф"
+    accuracy_decimals: 0
+
+  datetime:
+    id: mercury_datetime
+    name: "Дата-время"
+
+  # Диагностика
+  crc_errors:
+    id: mercury_crc_errors
+    name: "Ошибки CRC"
+    entity_category: diagnostic
+
+  last_update:
+    id: mercury_last_update
+    name: "Последнее обновление"
+    entity_category: diagnostic
+    
