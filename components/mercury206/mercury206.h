@@ -45,22 +45,39 @@ class Mercury206Component : public PollingComponent, public uart::UARTDevice {
   float get_setup_priority() const override { return setup_priority::DATA; }
 
  protected:
+  // === Протокол ===
   void build_address_field(uint8_t *buf);
-  uint16_t crc16_mercury(const uint8_t *data, uint16_t len);
-  bool verify_crc(const uint8_t *packet, uint8_t len);
+  
+  // CRC: принимает uint16_t* как в оригинальном коде
+  uint16_t crc16_mercury(const uint16_t *data, uint16_t len);
+  
+  // verify_crc: len = индекс последнего байта для расчёта CRC
+  bool verify_crc(const uint8_t *data, uint8_t len);
+  
   bool send_command(MercuryCommand cmd);
+  
+  // BCD helpers
   static uint8_t bcd_to_dec(uint8_t bcd);
   static uint32_t bcd_to_uint32(const uint8_t *bcd, uint8_t len);
+  
+  // Парсеры: принимают (data, len) как в старом коде
   bool parse_uip_response(const uint8_t *data, uint8_t len);
   bool parse_tariffs_response(const uint8_t *data, uint8_t len);
   bool parse_freq_response(const uint8_t *data, uint8_t len);
   bool parse_datetime_response(const uint8_t *data, uint8_t len);
+  
+  // Чтение ответа
   bool read_response(uint8_t *buffer, uint16_t max_len, uint16_t timeout_ms);
+  
+  // Основной опрос
   void poll_meter();
 
+  // === Поля ===
   uint32_t serial_number_{0};
   uint16_t request_timeout_{500};
   uint8_t retry_count_{2};
+  uint8_t cmd_index_{0};
+  uint8_t counter_{0};  // ← Добавить: счётчик прочитанных байт
   
   sensor::Sensor *voltage_sensor_{nullptr};
   sensor::Sensor *current_sensor_{nullptr};
@@ -77,7 +94,6 @@ class Mercury206Component : public PollingComponent, public uart::UARTDevice {
   
   uint32_t crc_error_count_{0};
   uint32_t success_count_{0};
-  uint8_t cmd_index_{0};
 };
 
 }  // namespace mercury206
