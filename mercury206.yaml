@@ -7,7 +7,7 @@ substitutions:
   tx_pin: GPIO4
   rx_pin: GPIO5
   rx_timeout: 500ms
-  update_interval: 30s
+  update_interval: 1s
 
 
 esphome:
@@ -21,6 +21,8 @@ esphome:
   platformio_options:
     build_flags: 
       - "-Wno-unused-variable"
+
+
 
 
 external_components:
@@ -94,7 +96,7 @@ mercury206:
     unit_of_measurement: "V"
     accuracy_decimals: 1
     filters:
-      - timeout: 60s
+      # - timeout: 60s
       - sliding_window_moving_average:
           window_size: 5
           send_every: 1
@@ -115,7 +117,7 @@ mercury206:
     unit_of_measurement: "kW"
     accuracy_decimals: 3
     filters:
-      - timeout: 60s
+      # - timeout: 60s
       - sliding_window_moving_average:
           window_size: 10
           send_every: 2
@@ -126,8 +128,8 @@ mercury206:
     device_class: frequency
     unit_of_measurement: "Hz"
     accuracy_decimals: 2
-    filters:
-      - timeout: 60s
+    # filters:
+    #   - timeout: 60s
 
   energy_tariff_1:
     id: mercury_t1
@@ -179,5 +181,4 @@ mercury206:
   last_update:
     id: mercury_last_update
     name: "Последнее обновление"
-    entity_category: diagnostic
-    
+    entity_category: diagnostic 
